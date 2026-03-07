@@ -240,7 +240,9 @@ jobs:
     steps:
       - name: Lowercase image prefix
         id: repo
-        run: echo "image_prefix=${IMAGE_PREFIX,,}" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "image_prefix=${IMAGE_PREFIX,,}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -261,12 +263,12 @@ jobs:
           set -euo pipefail
           GHCR_IMAGE="${{ env.REGISTRY }}/${{ steps.repo.outputs.image_prefix }}/sandboxes/base"
           ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_PREFIX }}/sandboxes/base"
-          SHA="${{ github.sha }}"
+          SHORT_SHA="${{ steps.repo.outputs.short_sha }}"
 
-          echo "Copying ${GHCR_IMAGE}:${SHA} -> ${ECR_IMAGE}:${SHA}"
+          echo "Copying ${GHCR_IMAGE}:${SHORT_SHA} -> ${ECR_IMAGE}:${SHORT_SHA}"
           docker buildx imagetools create \
-            -t "${ECR_IMAGE}:${SHA}" \
-            "${GHCR_IMAGE}:${SHA}"
+            -t "${ECR_IMAGE}:${SHORT_SHA}" \
+            "${GHCR_IMAGE}:${SHORT_SHA}"
 
           echo "Copying ${GHCR_IMAGE}:latest -> ${ECR_IMAGE}:latest"
           docker buildx imagetools create \
@@ -278,16 +280,16 @@ jobs:
         run: |
           set -euo pipefail
           SANDBOXES='${{ needs.detect-changes.outputs.sandboxes }}'
-          SHA="${{ github.sha }}"
+          SHORT_SHA="${{ steps.repo.outputs.short_sha }}"
 
           for SANDBOX in $(echo "$SANDBOXES" | jq -r '.[]'); do
             GHCR_IMAGE="${{ env.REGISTRY }}/${{ steps.repo.outputs.image_prefix }}/sandboxes/${SANDBOX}"
             ECR_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_IMAGE_PREFIX }}/sandboxes/${SANDBOX}"
 
-            echo "Copying ${GHCR_IMAGE}:${SHA} -> ${ECR_IMAGE}:${SHA}"
+            echo "Copying ${GHCR_IMAGE}:${SHORT_SHA} -> ${ECR_IMAGE}:${SHORT_SHA}"
             docker buildx imagetools create \
-              -t "${ECR_IMAGE}:${SHA}" \
-              "${GHCR_IMAGE}:${SHA}"
+              -t "${ECR_IMAGE}:${SHORT_SHA}" \
+              "${GHCR_IMAGE}:${SHORT_SHA}"
 
             echo "Copying ${GHCR_IMAGE}:latest -> ${ECR_IMAGE}:latest"
             docker buildx imagetools create \
