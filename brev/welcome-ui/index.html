@@ -157,73 +157,8 @@
     </div>
   </div>
 
-  <!-- Path 2 Modal: Other Agents -->
-  <div class="overlay" id="overlay-instructions" hidden>
-    <div class="modal modal--wide">
-      <div class="modal__header">
-        <h3 class="modal__title">Bring Your Own Agent</h3>
-        <button class="modal__close" id="close-instructions">
-          <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-      <div class="modal__body">
-        <p class="modal__text">
-          Connect from your laptop, create a sandbox, and run any agent inside it.
-          The NemoClaw TUI on your machine surfaces policy recommendations from the agent.
-          You approve or deny &mdash; the sandbox boundary is never violated.
-        </p>
-
-        <div class="instructions-section">
-          <h4 class="instructions-section__title">1. Install NemoClaw CLI</h4>
-          <div class="code-block">
-            <span class="cmd">pip install nemoclaw</span>
-            <button class="copy-btn" data-copy="pip install nemoclaw" aria-label="Copy">
-              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="instructions-section">
-          <h4 class="instructions-section__title">2. Connect to this VM</h4>
-          <div class="code-block" id="connect-cmd-block">
-            <span class="cmd" id="connect-cmd">nemoclaw cluster connect &lt;loading...&gt;</span>
-            <button class="copy-btn" id="copy-connect" aria-label="Copy">
-              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="instructions-section">
-          <h4 class="instructions-section__title">3. Create a sandbox and run your agent</h4>
-          <div class="code-block"><span class="comment"># Claude Code</span>
-<span class="cmd">nemoclaw sandbox create -- claude</span>
-
-<span class="comment"># OpenCode</span>
-<span class="cmd">nemoclaw sandbox create -- opencode</span>
-
-<span class="comment"># Any agent</span>
-<span class="cmd">nemoclaw sandbox create -- your-agent-command</span></div>
-        </div>
-
-        <div class="instructions-section">
-          <h4 class="instructions-section__title">4. Manage policies with the TUI</h4>
-          <div class="code-block">
-            <span class="cmd">nemoclaw term</span>
-            <button class="copy-btn" data-copy="nemoclaw term" aria-label="Copy">
-              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            </button>
-          </div>
-          <p class="modal__text" style="margin-top:10px">
-            When your agent hits a policy denial, it reads the policy, diagnoses the block,
-            and proposes an update. The TUI surfaces the recommendation:
-            <em>"Your sandbox wants to connect to pypi.org. Recommended policy update:
-            [allow pypi.org:443]. Approve?"</em>
-            You approve &mdash; the policy hot-reloads &mdash; the agent continues.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Path 2 Modal: rendered from other-agents.yaml -->
+  {{OTHER_AGENTS_MODAL}}
 
   <!-- Footer -->
   <footer class="footer">

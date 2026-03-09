@@ -6,6 +6,7 @@
 """NemoClaw Welcome UI — HTTP server with sandbox lifecycle APIs."""
 
 import hashlib
+import html as _html_mod
 import http.client
 import http.server
 import json
@@ -27,8 +28,7 @@ PORT = int(os.environ.get("PORT", 8081))
 ROOT = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.environ.get("REPO_ROOT", os.path.join(ROOT, "..", ".."))
 SANDBOX_DIR = os.path.join(REPO_ROOT, "sandboxes", "nemoclaw")
-# NEMOCLAW_IMAGE = "ghcr.io/nvidia/nemoclaw-community/sandboxes/nemoclaw:local"
-NEMOCLAW_IMAGE = "ghcr.io/nvidia/nemoclaw-community/sandboxes/nemoclaw:latest"
+NEMOCLAW_IMAGE = "ghcr.io/nvidia/nemoclaw-community/sandboxes/nemoclaw:local"
 POLICY_FILE = os.path.join(SANDBOX_DIR, "policy.yaml")
 
 LOG_FILE = "/tmp/nemoclaw-sandbox-create.log"
@@ -39,6 +39,177 @@ _detected_brev_id = ""
 SANDBOX_PORT = 18789
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+
+OTHER_AGENTS_YAML = os.path.join(ROOT, "other-agents.yaml")
+
+_COPY_BTN_SVG = (
+    '<svg viewBox="0 0 24 24">'
+    '<rect x="9" y="9" width="13" height="13" rx="2"/>'
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+    '</svg>'
+)
+
+
+def _render_other_agents_modal() -> str | None:
+    """Load other-agents.yaml and return the full modal overlay HTML."""
+    if not os.path.isfile(OTHER_AGENTS_YAML):
+        return None
+    if _yaml is None:
+        sys.stderr.write(
+            "[welcome-ui] PyYAML not installed; other-agents.yaml ignored\n"
+        )
+        return None
+    try:
+        with open(OTHER_AGENTS_YAML) as f:
+            data = _yaml.safe_load(f)
+    except Exception as exc:
+        sys.stderr.write(
+            f"[welcome-ui] Failed to parse other-agents.yaml: {exc}\n"
+        )
+        return None
+
+    title = data.get("title", "Bring Your Own Agent")
+    intro = (data.get("intro") or "").strip()
+    steps = data.get("steps") or []
+
+    body_parts: list[str] = []
+    if intro:
+        body_parts.append(
+            f'        <p class="modal__text">\n'
+            f"          {intro}\n"
+            f"        </p>"
+        )
+
+    for i, step in enumerate(steps, 1):
+        step_title = step.get("title", "")
+        commands = step.get("commands") or []
+        copyable = step.get("copyable", False)
+        block_id = step.get("block_id", "")
+        copy_btn_id = step.get("copy_button_id", "")
+        description = (step.get("description") or "").strip()
+
+        body_parts.append("")
+        body_parts.append('        <div class="instructions-section">')
+        body_parts.append(
+            f'          <h4 class="instructions-section__title">'
+            f"{i}. {step_title}</h4>"
+        )
+
+        groups: list[str] = []
+        for entry in commands:
+            lines: list[str] = []
+            if isinstance(entry, str):
+                lines.append(
+                    f'<span class="cmd">'
+                    f"{_html_mod.escape(entry)}</span>"
+                )
+            elif isinstance(entry, dict):
+                comment = entry.get("comment", "")
+                cmd = entry.get("cmd", "")
+                cmd_id = entry.get("id", "")
+                id_attr = f' id="{cmd_id}"' if cmd_id else ""
+                if comment:
+                    lines.append(
+                        f'<span class="comment">'
+                        f"# {_html_mod.escape(comment)}</span>"
+                    )
+                lines.append(
+                    f'<span class="cmd"{id_attr}>'
+                    f"{_html_mod.escape(cmd)}</span>"
+                )
+            groups.append("\n".join(lines))
+
+        cmd_html = "\n\n".join(groups)
+
+        copy_html = ""
+        if copyable:
+            if copy_btn_id:
+                copy_html = (
+                    f'<button class="copy-btn" id="{copy_btn_id}" '
+                    f'aria-label="Copy">{_COPY_BTN_SVG}</button>'
+                )
+            elif len(commands) == 1:
+                raw = (
+                    commands[0]
+                    if isinstance(commands[0], str)
+                    else commands[0].get("cmd", "")
+                )
+                copy_html = (
+                    f'<button class="copy-btn" '
+                    f'data-copy="{_html_mod.escape(raw)}" '
+                    f'aria-label="Copy">{_COPY_BTN_SVG}</button>'
+                )
+            else:
+                copy_html = (
+                    f'<button class="copy-btn" '
+                    f'aria-label="Copy">{_COPY_BTN_SVG}</button>'
+                )
+
+        block_id_attr = f' id="{block_id}"' if block_id else ""
+        body_parts.append(
+            f'          <div class="code-block"{block_id_attr}>'
+            f"{cmd_html}"
+            f"{copy_html}"
+            f"</div>"
+        )
+
+        if description:
+            body_parts.append(
+                f'          <p class="modal__text" style="margin-top:10px">'
+                f"\n            {description}\n"
+                f"          </p>"
+            )
+
+        body_parts.append("        </div>")
+
+    body_html = "\n".join(body_parts)
+
+    return (
+        f'<div class="overlay" id="overlay-instructions" hidden>\n'
+        f'    <div class="modal modal--wide">\n'
+        f'      <div class="modal__header">\n'
+        f'        <h3 class="modal__title">{title}</h3>\n'
+        f'        <button class="modal__close" id="close-instructions">\n'
+        f'          <svg viewBox="0 0 24 24">'
+        f'<path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>\n'
+        f"        </button>\n"
+        f"      </div>\n"
+        f'      <div class="modal__body">\n'
+        f"{body_html}\n"
+        f"      </div>\n"
+        f"    </div>\n"
+        f"  </div>"
+    )
+
+
+_rendered_index: str | None = None
+
+
+def _get_rendered_index() -> str:
+    """Return index.html with the YAML-rendered modal injected."""
+    global _rendered_index
+    if _rendered_index is not None:
+        return _rendered_index
+
+    index_path = os.path.join(ROOT, "index.html")
+    with open(index_path) as f:
+        template = f.read()
+
+    modal_html = _render_other_agents_modal()
+    if modal_html:
+        template = template.replace("{{OTHER_AGENTS_MODAL}}", modal_html)
+        sys.stderr.write("[welcome-ui] Rendered other-agents.yaml into index.html\n")
+    else:
+        template = template.replace(
+            "{{OTHER_AGENTS_MODAL}}",
+            '<!-- other-agents.yaml not available -->',
+        )
+        sys.stderr.write(
+            "[welcome-ui] WARNING: could not render other-agents.yaml\n"
+        )
+
+    _rendered_index = template
+    return _rendered_index
 
 def _strip_ansi(text: str) -> str:
     return _ANSI_RE.sub("", text)
@@ -285,7 +456,8 @@ def _run_sandbox_create():
     cmd = [
         "nemoclaw", "sandbox", "create",
         "--name", "nemoclaw",
-        "--from", NEMOCLAW_IMAGE,
+        # "--from", NEMOCLAW_IMAGE,
+        "--from", "nemoclaw",
         "--forward", "18789",
     ]
     if policy_path:
@@ -511,6 +683,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._proxy_to_sandbox()
 
         if self.command in ("GET", "HEAD"):
+            if path in ("", "/", "/index.html"):
+                return self._serve_templated_index()
             return super().do_GET()
 
         self.send_error(404)
@@ -981,6 +1155,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "tui": "nemoclaw term",
             },
         })
+
+    # -- Templated index.html -------------------------------------------
+
+    def _serve_templated_index(self):
+        """Serve index.html with the YAML-rendered Other Agents modal."""
+        content = _get_rendered_index().encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(content)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(content)
 
     # -- Helpers --------------------------------------------------------
 

@@ -1,0 +1,56 @@
+# Content definition for the "Other Agents" modal.
+# Edit this file instead of raw HTML — the server renders it automatically.
+#
+# Structure:
+#   title       - Modal heading
+#   intro       - Introductory paragraph (supports raw HTML)
+#   steps[]     - Numbered instruction sections
+#     title     - Section heading (auto-numbered)
+#     commands  - List of commands to show in the code block
+#                   string  → plain command
+#                   dict    → { cmd, comment (optional), id (optional) }
+#     copyable       - Show a copy-to-clipboard button (default: false)
+#     copy_button_id - HTML id for the copy button (for JS hooks)
+#     block_id       - HTML id for the code-block div (for JS hooks)
+#     description    - Paragraph below the code block (supports raw HTML)
+
+title: Bring Your Own Agent
+
+intro: >-
+  Connect from your laptop, create a sandbox, and run any agent inside it.
+  The NemoClaw TUI on your machine surfaces policy recommendations from the agent.
+  You approve or deny &mdash; the sandbox boundary is never violated.
+
+steps:
+  - title: Install NemoClaw CLI
+    commands:
+      - pip install nemoclaw
+    copyable: true
+
+  - title: Connect to this VM
+    block_id: connect-cmd-block
+    commands:
+      - cmd: "nemoclaw cluster connect <loading...>"
+        id: connect-cmd
+    copy_button_id: copy-connect
+    copyable: true
+
+  - title: Create a sandbox and run your agent
+    commands:
+      - comment: Claude Code
+        cmd: "nemoclaw sandbox create -- claude"
+      - comment: OpenCode
+        cmd: "nemoclaw sandbox create -- opencode"
+      - comment: Any agent
+        cmd: "nemoclaw sandbox create -- your-agent-command"
+
+  - title: Manage policies with the TUI
+    commands:
+      - nemoclaw term
+    copyable: true
+    description: >-
+      When your agent hits a policy denial, it reads the policy, diagnoses the block,
+      and proposes an update. The TUI surfaces the recommendation:
+      <em>&ldquo;Your sandbox wants to connect to pypi.org. Recommended policy update:
+      [allow pypi.org:443]. Approve?&rdquo;</em>
+      You approve &mdash; the policy hot-reloads &mdash; the agent continues.
