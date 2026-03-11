@@ -11,7 +11,7 @@
 # Build:  docker build -t openshell-base .
 
 # System base
-FROM ubuntu:24.04 AS system
+FROM nvcr.io/nvidia/base/ubuntu:noble-20251013 AS system
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
