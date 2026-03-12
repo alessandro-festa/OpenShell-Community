@@ -25,6 +25,8 @@ GATEWAY_LOG="${GATEWAY_LOG:-/tmp/openshell-gateway.log}"
 WELCOME_UI_LOG="${WELCOME_UI_LOG:-/tmp/welcome-ui.log}"
 LAUNCH_LOG="${LAUNCH_LOG:-/tmp/openshell-launch.log}"
 WAIT_TIMEOUT_SECS="${WAIT_TIMEOUT_SECS:-30}"
+CLI_RETRY_COUNT="${CLI_RETRY_COUNT:-5}"
+CLI_RETRY_DELAY_SECS="${CLI_RETRY_DELAY_SECS:-3}"
 
 mkdir -p "$(dirname "$LAUNCH_LOG")"
 touch "$LAUNCH_LOG"
@@ -85,6 +87,26 @@ wait_for_log_pattern() {
     fi
 
     sleep 1
+  done
+}
+
+retry_cli() {
+  local attempt=1
+  local max_attempts="${CLI_RETRY_COUNT}"
+  local delay_secs="${CLI_RETRY_DELAY_SECS}"
+
+  while true; do
+    if "$@"; then
+      return 0
+    fi
+
+    if (( attempt >= max_attempts )); then
+      return 1
+    fi
+
+    log "Command failed, retrying (${attempt}/${max_attempts}): $*"
+    sleep "$delay_secs"
+    attempt=$((attempt + 1))
   done
 }
 
@@ -328,15 +350,27 @@ run_provider_create_or_replace() {
   shift
 
   log "Configuring provider: $name"
-  if "$CLI_BIN" provider create --name "$name" "$@" >/dev/null 2>&1; then
+  if retry_cli "$CLI_BIN" provider create --name "$name" "$@" >/dev/null 2>&1; then
     log "Created provider: $name"
     return
   fi
 
   log "Provider create failed for $name. Replacing existing provider..."
-  "$CLI_BIN" provider delete "$name" >/dev/null 2>&1 || true
-  "$CLI_BIN" provider create --name "$name" "$@"
+  retry_cli "$CLI_BIN" provider delete "$name" >/dev/null 2>&1 || true
+  retry_cli "$CLI_BIN" provider create --name "$name" "$@"
   log "Recreated provider: $name"
+}
+
+wait_for_gateway_cli() {
+  log "Waiting for gateway CLI operations to stabilize..."
+  if retry_cli "$CLI_BIN" provider list --names >/dev/null 2>&1; then
+    log "Gateway CLI is responsive."
+    return
+  fi
+
+  log "Gateway CLI did not stabilize. Last gateway log lines:"
+  tail -n 50 "$GATEWAY_LOG" || true
+  exit 1
 }
 
 start_gateway() {
@@ -364,6 +398,7 @@ start_gateway() {
   fi
 
   log "Gateway reported ready."
+  wait_for_gateway_cli
 }
 
 install_ui_deps() {
