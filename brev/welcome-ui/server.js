@@ -266,8 +266,7 @@ const injectKeyState = {
 };
 
 // Raw API key stored in memory so it can be passed to the sandbox at
-// creation time and forwarded to LiteLLM for inference.  Not persisted
-// to disk.
+// creation time. Not persisted to disk.
 let _nvidiaApiKey = process.env.NVIDIA_INFERENCE_API_KEY
   || process.env.NVIDIA_INTEGRATE_API_KEY
   || "";
@@ -804,38 +803,6 @@ function runInjectKey(key, keyHash) {
     });
 }
 
-/**
- * Forward the API key to the sandbox's LiteLLM instance via the
- * policy-proxy's /api/litellm-key endpoint.  This triggers a config
- * regeneration and LiteLLM restart with the new key.
- */
-function forwardKeyToSandbox(key) {
-  const body = JSON.stringify({ apiKey: key });
-  const opts = {
-    hostname: "127.0.0.1",
-    port: SANDBOX_PORT,
-    path: "/api/litellm-key",
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(body),
-    },
-    timeout: 10000,
-  };
-  const req = http.request(opts, (res) => {
-    res.resume();
-    if (res.statusCode === 200) {
-      log("inject-key", "Forwarded API key to sandbox LiteLLM");
-    } else {
-      log("inject-key", `Sandbox LiteLLM key forward returned ${res.statusCode}`);
-    }
-  });
-  req.on("error", (err) => {
-    log("inject-key", `Failed to forward key to sandbox: ${err.message}`);
-  });
-  req.end(body);
-}
-
 // ── Provider CRUD ──────────────────────────────────────────────────────────
 
 function parseProviderDetail(stdout) {
@@ -1322,12 +1289,6 @@ async function handleInjectKey(req, res) {
   _nvidiaApiKey = key;
 
   runInjectKey(key, keyH);
-
-  // If the sandbox is already running, forward the key to LiteLLM inside
-  // the sandbox so it can authenticate with upstream NVIDIA APIs.
-  if (sandboxState.status === "running") {
-    forwardKeyToSandbox(key);
-  }
 
   return jsonResponse(res, 202, { ok: true, started: true });
 }
