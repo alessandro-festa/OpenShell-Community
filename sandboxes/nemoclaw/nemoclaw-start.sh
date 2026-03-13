@@ -101,6 +101,8 @@ export LITELLM_LOCAL_MODEL_COST_MAP="True"
 
 _DEFAULT_MODEL="moonshotai/kimi-k2.5"
 _DEFAULT_PROVIDER="nvidia-endpoints"
+_DEFAULT_CONTEXT_WINDOW=200000
+_DEFAULT_MAX_TOKENS=8192
 
 generate_litellm_config() {
   local model_id="${1:-$_DEFAULT_MODEL}"
@@ -212,6 +214,12 @@ cfg['gateway']['controlUi'] = {
     'allowInsecureAuth': True,
     'allowedOrigins': origins,
 }
+provider = cfg.get('models', {}).get('providers', {}).get('custom-127-0-0-1-4000')
+if isinstance(provider, dict):
+    for model in provider.get('models', []):
+        if isinstance(model, dict) and model.get('id') == '${_DEFAULT_MODEL}':
+            model['contextWindow'] = ${_DEFAULT_CONTEXT_WINDOW}
+            model['maxTokens'] = ${_DEFAULT_MAX_TOKENS}
 json.dump(cfg, open(os.environ['HOME'] + '/.openclaw/openclaw.json', 'w'), indent=2)
 "
 

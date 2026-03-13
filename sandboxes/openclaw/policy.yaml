@@ -125,3 +125,7 @@ network_policies:
     binaries:
       - { path: /usr/local/bin/claude }
       - { path: /usr/bin/gh }
+
+inference:
+  allowed_routes:
+    - local
