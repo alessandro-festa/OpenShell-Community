@@ -16,10 +16,6 @@ FROM ${BASE_IMAGE}
 
 USER root
 
-# Override the startup script with our version (adds runtime API key injection)
-COPY nemoclaw-start.sh /usr/local/bin/nemoclaw-start
-RUN chmod +x /usr/local/bin/nemoclaw-start
-
 # Install the policy reverse proxy (sits in front of the OpenClaw gateway,
 # intercepts /api/policy to read/write the sandbox policy file) and its
 # runtime dependencies for gRPC gateway sync.
@@ -50,9 +46,9 @@ RUN set -e; \
     cd /opt/nemoclaw-devx && npm install --production; \
     UI_DIR="$(npm root -g)/openclaw/dist/control-ui"; \
     esbuild /opt/nemoclaw-devx/index.ts \
-      --bundle \
-      --format=esm \
-      --outfile="$UI_DIR/assets/nemoclaw-devx.js"; \
+    --bundle \
+    --format=esm \
+    --outfile="$UI_DIR/assets/nemoclaw-devx.js"; \
     HASH=$(md5sum "$UI_DIR/assets/nemoclaw-devx.js" | cut -c1-8); \
     sed -i "s|</head>|<link rel=\"stylesheet\" href=\"./assets/nemoclaw-devx.css?v=${HASH}\">\n</head>|" "$UI_DIR/index.html"; \
     sed -i "s|</head>|<script type=\"module\" src=\"./assets/nemoclaw-devx.js?v=${HASH}\"></script>\n</head>|" "$UI_DIR/index.html"; \
