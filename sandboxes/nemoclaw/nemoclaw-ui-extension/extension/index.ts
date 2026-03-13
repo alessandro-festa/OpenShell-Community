@@ -15,11 +15,12 @@ import { injectButton } from "./deploy-modal.ts";
 import { injectNavGroup, activateNemoPage, watchOpenClawNavClicks } from "./nav-group.ts";
 import { injectModelSelector, watchChatCompose } from "./model-selector.ts";
 import { ingestKeysFromUrl, DEFAULT_MODEL, resolveApiKey, isKeyConfigured } from "./model-registry.ts";
-import { waitForReconnect } from "./gateway-bridge.ts";
+import { waitForReconnect, waitForStableConnection } from "./gateway-bridge.ts";
 import { syncKeysToProviders } from "./api-keys-page.ts";
 
 const INITIAL_CONNECT_TIMEOUT_MS = 30_000;
 const POST_PAIRING_SETTLE_DELAY_MS = 15_000;
+const STABLE_CONNECTION_WINDOW_MS = 3_000;
 
 function inject(): boolean {
   const hasButton = injectButton();
@@ -79,7 +80,14 @@ function bootstrap() {
   waitForReconnect(INITIAL_CONNECT_TIMEOUT_MS)
     .then(async () => {
       setConnectOverlayText("Device pairing approved. Finalizing dashboard...");
-      await new Promise((resolve) => setTimeout(resolve, POST_PAIRING_SETTLE_DELAY_MS));
+      try {
+        await waitForStableConnection(
+          STABLE_CONNECTION_WINDOW_MS,
+          POST_PAIRING_SETTLE_DELAY_MS,
+        );
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, POST_PAIRING_SETTLE_DELAY_MS));
+      }
       revealApp();
     })
     .catch(revealApp);

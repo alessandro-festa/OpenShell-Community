@@ -249,6 +249,9 @@ echo "[gateway] policy-proxy launched (pid $!) upstream=${INTERNAL_GATEWAY_PORT}
 # before the user notices the "pairing required" prompt in the Control UI.
 (
   echo "[auto-pair] watcher starting"
+  _pair_timeout_secs="${AUTO_PAIR_TIMEOUT_SECS:-1800}"
+  _pair_sleep_secs="0.5"
+  _pair_heartbeat_every=120
   _json_has_approval() {
     jq -e '
       .device
@@ -269,12 +272,22 @@ echo "[gateway] policy-proxy launched (pid $!) upstream=${INTERNAL_GATEWAY_PORT}
     ' 2>/dev/null || echo "unparseable"
   }
 
-  _pair_deadline=$(($(date +%s) + 300))
+  if [ "${_pair_timeout_secs}" -gt 0 ] 2>/dev/null; then
+    _pair_deadline=$(($(date +%s) + _pair_timeout_secs))
+    echo "[auto-pair] watcher timeout=${_pair_timeout_secs}s"
+  else
+    _pair_deadline=0
+    echo "[auto-pair] watcher timeout=disabled"
+  fi
   _pair_attempts=0
   _pair_approved=0
   _pair_errors=0
-  while [ "$(date +%s)" -lt "$_pair_deadline" ]; do
-    sleep 0.5
+  while true; do
+    if [ "${_pair_deadline}" -gt 0 ] && [ "$(date +%s)" -ge "${_pair_deadline}" ]; then
+      break
+    fi
+
+    sleep "${_pair_sleep_secs}"
     _pair_attempts=$((_pair_attempts + 1))
     _approve_output="$(openclaw devices approve --latest --json 2>&1 || true)"
 
@@ -290,7 +303,7 @@ echo "[gateway] policy-proxy launched (pid $!) upstream=${INTERNAL_GATEWAY_PORT}
       echo "[auto-pair] approve --latest unexpected output attempts=${_pair_attempts} errors=${_pair_errors}: ${_approve_output}"
     fi
 
-    if [ $((_pair_attempts % 20)) -eq 0 ]; then
+    if [ $((_pair_attempts % _pair_heartbeat_every)) -eq 0 ]; then
       _list_output="$(openclaw devices list --json 2>&1 || true)"
       _device_summary="$(printf '%s\n' "$_list_output" | _summarize_device_list)"
       echo "[auto-pair] heartbeat attempts=${_pair_attempts} approved=${_pair_approved} errors=${_pair_errors} ${_device_summary}"
