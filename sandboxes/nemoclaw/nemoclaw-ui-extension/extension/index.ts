@@ -13,7 +13,7 @@
 import "./styles.css";
 import { injectButton } from "./deploy-modal.ts";
 import { injectNavGroup, activateNemoPage, watchOpenClawNavClicks } from "./nav-group.ts";
-import { injectModelSelector, watchChatCompose } from "./model-selector.ts";
+import { bootstrapActiveRoutePrime, injectModelSelector, watchChatCompose } from "./model-selector.ts";
 import { ingestKeysFromUrl, DEFAULT_MODEL, resolveApiKey, isKeyConfigured } from "./model-registry.ts";
 import { hasBlockingGatewayMessage, waitForStableConnection } from "./gateway-bridge.ts";
 import { syncKeysToProviders } from "./api-keys-page.ts";
@@ -352,6 +352,10 @@ function bootstrap() {
       console.warn("[NeMoClaw] bootstrap provider key sync failed:", e),
     );
   }
+
+  bootstrapActiveRoutePrime().catch((e) =>
+    console.warn("[NeMoClaw] bootstrap active route prime failed:", e),
+  );
 
   if (inject()) {
     injectModelSelector();

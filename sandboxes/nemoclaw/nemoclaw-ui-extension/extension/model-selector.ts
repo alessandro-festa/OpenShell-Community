@@ -164,7 +164,16 @@ function markActiveRoutePrimed(route: ClusterRoute): void {
 
 async function primeActiveRoute(): Promise<void> {
   const route = activeClusterRoute;
-  if (!route?.providerName || !route.modelId || hasPrimedActiveRoute(route)) return;
+  if (!route?.providerName || !route.modelId) {
+    console.info("[NeMoClaw] active route prime: skipped (no active route)");
+    return;
+  }
+  if (hasPrimedActiveRoute(route)) {
+    console.info(`[NeMoClaw] active route prime: skipped (already primed ${route.providerName}/${route.modelId})`);
+    return;
+  }
+
+  console.info(`[NeMoClaw] active route prime: start ${route.providerName}/${route.modelId}`);
 
   const res = await fetch("/api/cluster-inference", {
     method: "POST",
@@ -177,6 +186,12 @@ async function primeActiveRoute(): Promise<void> {
   }
 
   markActiveRoutePrimed(route);
+  console.info(`[NeMoClaw] active route prime: success ${route.providerName}/${route.modelId}`);
+}
+
+export async function bootstrapActiveRoutePrime(): Promise<void> {
+  await fetchDynamic();
+  await primeActiveRoute();
 }
 
 // ---------------------------------------------------------------------------
