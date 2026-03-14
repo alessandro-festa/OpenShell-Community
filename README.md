@@ -30,8 +30,6 @@ This repo is the community ecosystem around OpenShell -- a hub for contributed s
 
 ### Quick Start with Brev
 
-#### Deploy Instantly with NVIDIA Brev
-
 Skip the setup and launch OpenShell Community on a fully configured Brev instance, whether you want to use Brev as a remote OpenShell gateway with or without GPU accelerators, or as an all-in-one playground for sandboxes, inference, and UI workflows.
 
 | Instance | Best For | Deploy |
