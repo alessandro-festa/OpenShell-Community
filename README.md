@@ -32,22 +32,14 @@ This repo is the community ecosystem around OpenShell -- a hub for contributed s
 
 #### Deploy Instantly with NVIDIA Brev
 
-Skip the setup and launch OpenShell Community on a fully configured Brev instance.
+Skip the setup and launch OpenShell Community on a fully configured Brev instance, whether you want to use Brev as a remote OpenShell gateway with or without GPU accelerators, or as an all-in-one playground for sandboxes, inference, and UI workflows.
 
 | Instance | Best For | Deploy |
 | -------- | -------- | ------ |
-| CPU-only | External inference endpoints, remote APIs, lighter-weight sandbox workflows | <a href="https://brev.nvidia.com/"><img src="https://brev-assets.s3.us-west-1.amazonaws.com/nv-lb-dark.svg" alt="Deploy on Brev" height="40"/></a> |
-| NVIDIA H100 | Locally hosted LLM endpoints, GPU-heavy sandboxes, higher-throughput agent workloads | <a href="https://brev.nvidia.com/"><img src="https://brev-assets.s3.us-west-1.amazonaws.com/nv-lb-dark.svg" alt="Deploy on Brev" height="40"/></a> |
+| CPU-only | Remote OpenShell gateway deployments, external inference endpoints, remote APIs, and lighter-weight sandbox workflows | <a href="https://brev.nvidia.com/"><img src="https://brev-assets.s3.us-west-1.amazonaws.com/nv-lb-dark.svg" alt="Deploy on Brev" height="40"/></a> |
+| NVIDIA H100 | All-in-one OpenShell playgrounds, locally hosted LLM endpoints, GPU-heavy sandboxes, and higher-throughput agent workloads | <a href="https://brev.nvidia.com/"><img src="https://brev-assets.s3.us-west-1.amazonaws.com/nv-lb-dark.svg" alt="Deploy on Brev" height="40"/></a> |
 
-After the Brev instance is ready, bootstrap the Welcome UI:
-
-```bash
-git clone https://github.com/NVIDIA/OpenShell-Community.git
-cd OpenShell-Community
-bash brev/launch.sh
-```
-
-The launcher brings up the Welcome UI on `http://localhost:8081`, where you can inject provider keys and create the NeMoClaw sandbox flow.
+After the Brev instance is ready, access the Welcome UI to inject provider keys and access your Openclaw sandbox.
 
 ### Using Sandboxes
 
