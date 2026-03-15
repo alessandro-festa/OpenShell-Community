@@ -4,5 +4,8 @@
   "window.menuBarVisibility": "classic",
   "security.workspace.trust.enabled": false,
   "telemetry.telemetryLevel": "off",
-  "update.mode": "none"
+  "update.mode": "none",
+  "donations.disablePrompt": true,
+  "extensions.ignoreRecommendations": true,
+  "workbench.tips.enabled": false
 }

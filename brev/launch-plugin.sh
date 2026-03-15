@@ -459,6 +459,7 @@ configure_code_server() {
 
   sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/nv-theme-0.0.1.vsix" "$config_dir/nv-theme-0.0.1.vsix"
   sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/settings.json" "$settings_user_dir/settings.json"
+  sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/terminals.json" "$TARGET_HOME/.vscode/terminals.json"
   sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/README.md" "$TARGET_HOME/README.md"
 
   sudo -u "$TARGET_USER" tee "$config_dir/config.yaml" >/dev/null <<EOF
@@ -497,6 +498,7 @@ EOF
   sudo -u "$TARGET_USER" install -m 644 "$workspace_path" "$home_workspace_path"
 
   sudo -H -u "$TARGET_USER" env HOME="$TARGET_HOME" code-server --install-extension "$config_dir/nv-theme-0.0.1.vsix" --force >/dev/null
+  sudo -H -u "$TARGET_USER" env HOME="$TARGET_HOME" code-server --install-extension fabiospampinato.vscode-terminals --force >/dev/null
 }
 
 enable_code_server_service() {

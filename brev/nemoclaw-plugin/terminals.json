@@ -1,0 +1,14 @@
+{
+  "autorun": true,
+  "terminals": [
+    {
+      "name": "openclaw-status",
+      "description": "OpenClaw status",
+      "open": true,
+      "focus": true,
+      "commands": [
+        "openclaw status"
+      ]
+    }
+  ]
+}
