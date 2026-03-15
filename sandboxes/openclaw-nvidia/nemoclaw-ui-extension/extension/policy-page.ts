@@ -428,6 +428,7 @@ function buildTabLayout(): HTMLElement {
 function buildRecommendationsSection(): HTMLElement {
   const section = document.createElement("div");
   section.className = "nemoclaw-policy-recommendations";
+  section.style.display = "none"; // Shown only when we have recommendations (after async load)
   section.innerHTML = `
     <div class="nemoclaw-policy-recommendations__header">
       <span class="nemoclaw-policy-recommendations__icon">${ICON_SHIELD}</span>
@@ -474,10 +475,10 @@ function buildRecommendationsSection(): HTMLElement {
       setCount(unique.length);
 
       if (unique.length === 0) {
-        list.classList.add("nemoclaw-policy-recommendations__list--empty");
-        list.textContent = "No recent blocks. Denied connections will appear here.";
+        section.style.display = "none";
         return;
       }
+      section.style.display = "";
 
       approveAllBtn.onclick = async () => {
         approveAllBtn.disabled = true;
