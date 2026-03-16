@@ -80,4 +80,13 @@ RUN set -e; \
 RUN npm install -g tar@7.5.11 && \
     npm --prefix "$(npm root -g)/openclaw" update tar
 
+# Sandbox-specific agent skills (e.g. OpenShell network policy fail-fast).
+# Installed into ~/.agents/skills and symlinked into ~/.claude/skills for discovery.
+COPY skills/ /sandbox/.agents/skills/
+RUN for skill in /sandbox/.agents/skills/*/; do \
+      [ -d "$skill" ] || continue; \
+      ln -sf "$skill" "/sandbox/.claude/skills/$(basename "$skill")"; \
+    done && \
+    chown -R sandbox:sandbox /sandbox/.agents/skills /sandbox/.claude/skills
+
 ENTRYPOINT ["/bin/bash"]
