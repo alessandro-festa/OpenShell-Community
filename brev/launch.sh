@@ -458,11 +458,15 @@
   }
 
 install_cli_from_release() {
-  local arch tmpdir repo pattern archive candidate url gh_available
+  local arch tmpdir repo pattern archive candidate url gh_available download_tag
 
   arch="$(detect_arch)"
   tmpdir="$(mktemp -d)"
   gh_available=0
+  download_tag="$CLI_RELEASE_TAG"
+  if [[ "$download_tag" != "devel" && "$download_tag" != v* ]]; then
+    download_tag="v$download_tag"
+  fi
 
   if command -v gh >/dev/null 2>&1; then
     gh_available=1
@@ -482,15 +486,15 @@ install_cli_from_release() {
       esac
 
       pattern="${candidate}-${arch}-unknown-linux-musl.tar.gz"
-      log "Trying CLI download: ${repo} ${CLI_RELEASE_TAG} ${pattern}"
+      log "Trying CLI download: ${repo} ${download_tag} ${pattern}"
       archive="$tmpdir/$pattern"
-      url="https://github.com/${repo}/releases/download/${CLI_RELEASE_TAG}/${pattern}"
+      url="https://github.com/${repo}/releases/download/${download_tag}/${pattern}"
 
       if command -v curl >/dev/null 2>&1 && curl -fsSL "$url" -o "$archive"; then
         :
       elif command -v wget >/dev/null 2>&1 && wget -q -O "$archive" "$url"; then
         :
-      elif [[ "$gh_available" -eq 1 ]] && gh release download "$CLI_RELEASE_TAG" --repo "$repo" --pattern "$pattern" --dir "$tmpdir" >/dev/null 2>&1; then
+      elif [[ "$gh_available" -eq 1 ]] && gh release download "$download_tag" --repo "$repo" --pattern "$pattern" --dir "$tmpdir" >/dev/null 2>&1; then
         :
       else
         continue
