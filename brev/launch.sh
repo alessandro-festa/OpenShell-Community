@@ -29,10 +29,12 @@
   LAUNCH_LOG="${LAUNCH_LOG:-/tmp/openshell-launch.log}"
   WAIT_TIMEOUT_SECS="${WAIT_TIMEOUT_SECS:-30}"
   CLI_RETRY_COUNT="${CLI_RETRY_COUNT:-5}"
-  CLI_RETRY_DELAY_SECS="${CLI_RETRY_DELAY_SECS:-3}"
-  GHCR_LOGIN="${GHCR_LOGIN:-auto}"
-  GHCR_USER="${GHCR_USER:-}"
-  DEFAULT_NEMOCLAW_IMAGE="ghcr.io/nvidia/openshell-community/sandboxes/openclaw-nvidia:latest"
+CLI_RETRY_DELAY_SECS="${CLI_RETRY_DELAY_SECS:-3}"
+GHCR_LOGIN="${GHCR_LOGIN:-auto}"
+GHCR_USER="${GHCR_USER:-}"
+DEFAULT_INFERENCE_PROVIDER="${DEFAULT_INFERENCE_PROVIDER:-nvidia-endpoints}"
+DEFAULT_INFERENCE_MODEL="${DEFAULT_INFERENCE_MODEL:-moonshotai/kimi-k2.5}"
+DEFAULT_NEMOCLAW_IMAGE="ghcr.io/nvidia/openshell-community/sandboxes/openclaw-nvidia:latest"
   if [[ -n "${NEMOCLAW_IMAGE+x}" ]]; then
     NEMOCLAW_IMAGE_EXPLICIT=1
   else
@@ -592,24 +594,22 @@ install_cli_from_release() {
   }
 
   set_inference_route() {
-    # Set the default inference route to one model (nvidia-endpoints + kimi-k2.5).
-    # Canonical CLI per brev/welcome-ui/SERVER_ARCHITECTURE.md: cluster inference set
-    # (CLI_BIN is either "openshell" or "nemoclaw"; both accept the same subcommands.)
-    # Try canonical first, then "inference set" as fallback for other CLI versions.
+    local cmd_output=""
     log "Configuring inference route..."
 
-    if "$CLI_BIN" cluster inference set --provider nvidia-endpoints --model moonshotai/kimi-k2.5 --no-verify >/dev/null 2>&1; then
+    if cmd_output="$("$CLI_BIN" cluster inference set --provider "$DEFAULT_INFERENCE_PROVIDER" --model "$DEFAULT_INFERENCE_MODEL" --no-verify 2>&1)"; then
       log "Configured inference via '$CLI_BIN cluster inference set'."
       return
     fi
+    log "Canonical inference command failed: ${cmd_output//$'\n'/ | }"
 
-    if "$CLI_BIN" inference set --provider nvidia-endpoints --model moonshotai/kimi-k2.5 --no-verify >/dev/null 2>&1; then
+    if cmd_output="$("$CLI_BIN" inference set --provider "$DEFAULT_INFERENCE_PROVIDER" --model "$DEFAULT_INFERENCE_MODEL" --no-verify 2>&1)"; then
       log "Configured inference via '$CLI_BIN inference set'."
       return
     fi
+    log "Current inference command failed: ${cmd_output//$'\n'/ | }"
 
-    log "Unable to configure inference route with either 'cluster inference set' or 'inference set'."
-    exit 1
+    log "Unable to configure inference route automatically. Continuing; the welcome UI can still set it later."
   }
 
   run_provider_create_or_replace() {
