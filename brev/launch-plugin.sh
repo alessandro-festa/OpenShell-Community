@@ -404,11 +404,7 @@ run_plugin_install_script() {
     exit 1
   fi
 
-  log "Running plugin installer from $PLUGIN_DIR/install.sh"
-  (
-    cd "$PLUGIN_DIR"
-    bash ./install.sh
-  )
+  log "Plugin installer available at $PLUGIN_DIR/install.sh"
 }
 
 install_code_server() {
@@ -455,12 +451,12 @@ configure_code_server() {
   "autorun": true,
   "terminals": [
     {
-      "name": "openclaw-status",
-      "description": "OpenClaw status",
+      "name": "nemoclaw-install",
+      "description": "NemoClaw install",
       "open": true,
       "focus": true,
       "commands": [
-        "openclaw status"
+        "cd /home/ubuntu/openshell-openclaw-plugin && bash ./install.sh"
       ]
     }
   ]
@@ -524,7 +520,7 @@ print_next_steps() {
   log "Plugin repo: $PLUGIN_DIR"
   log "code-server URL: http://$(hostname -f 2>/dev/null || hostname):${CODE_SERVER_PORT}"
   log "code-server service: journalctl -u code-server@${TARGET_USER} -f"
-  log "Verify plugin commands: openclaw nemoclaw status"
+  log "Next step: open code-server and complete the interactive install in the auto-opened terminal"
 }
 
 main() {
@@ -551,7 +547,7 @@ main() {
   step "Cloning plugin repo"
   clone_plugin_repo
 
-  step "Running plugin installer"
+  step "Preparing plugin installer"
   run_plugin_install_script
 
   step "Installing code-server"

@@ -2,12 +2,12 @@
   "autorun": true,
   "terminals": [
     {
-      "name": "openclaw-status",
-      "description": "OpenClaw status",
+      "name": "nemoclaw-install",
+      "description": "NemoClaw install",
       "open": true,
       "focus": true,
       "commands": [
-        "openclaw status"
+        "cd /home/ubuntu/openshell-openclaw-plugin && bash ./install.sh"
       ]
     }
   ]
