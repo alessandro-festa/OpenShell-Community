@@ -4,51 +4,47 @@ Use NemoClaw through OpenClaw to drive OpenShell-backed sandbox workflows.
 This launchable is opinionated toward OpenClaw as the primary interface and
 OpenShell as the runtime beneath it.
 
-## Install
+## Launchable Flow
 
-### Prerequisites
+When this Brev launchable completes host setup, it opens `code-server` and
+starts an interactive terminal that runs:
 
 ```bash
-npm install -g openclaw@latest
+cd /home/ubuntu/openshell-openclaw-plugin
+bash ./install.sh
 ```
 
-Install the NemoClaw plugin from a public GitHub checkout:
+That installer is the maintained setup path from the plugin repo. Complete the
+interactive onboarding there. The patched upstream onboarding flow now starts
+the actual in-sandbox OpenClaw gateway behind the forwarded `127.0.0.1:18789`
+listener.
+
+## Manual Install
+
+If you want to run the plugin installer yourself later, use the checkout
+created by `brev/launch-plugin.sh`:
+
+```bash
+cd /home/ubuntu/openshell-openclaw-plugin
+bash ./install.sh
+```
+
+Public GitHub checkout:
 
 ```bash
 cd /home/ubuntu
 git clone https://github.com/NVIDIA/openshell-openclaw-plugin.git
-cd /home/ubuntu/openshell-openclaw-plugin/nemoclaw
-npm install
-npm run build
-openclaw plugins install .
+cd /home/ubuntu/openshell-openclaw-plugin
+bash ./install.sh
 ```
 
-Install the NemoClaw plugin from a private GitHub checkout:
+Private GitHub checkout:
 
 ```bash
 cd /home/ubuntu
 git clone https://x-access-token:${GITHUB_TOKEN}@github.com/NVIDIA/openshell-openclaw-plugin.git
-cd /home/ubuntu/openshell-openclaw-plugin/nemoclaw
-npm install
-npm run build
-openclaw plugins install .
-```
-
-Install the NemoClaw plugin from the local path created by `brev/launch-plugin.sh`:
-
-```bash
-cd /home/ubuntu/openshell-openclaw-plugin/nemoclaw
-npm install
-npm run build
-openclaw plugins install .
-```
-
-If you also want the standalone helper CLI used by this launchable:
-
-```bash
 cd /home/ubuntu/openshell-openclaw-plugin
-sudo npm install -g .
-nemoclaw setup
+bash ./install.sh
 ```
 
 ## OpenClaw Commands
@@ -60,6 +56,7 @@ nemoclaw setup
 | `openclaw nemoclaw connect` | Interactive shell into the sandbox |
 | `openclaw nemoclaw status` | Blueprint state, sandbox health, inference config |
 | `openclaw nemoclaw eject` | Rollback to host installation from snapshot |
+| `openclaw nemoclaw onboard` | Interactive onboarding for API key, endpoint, and model selection |
 | `/nemoclaw` | Slash command in chat (status, eject) |
 
 ## Usage
