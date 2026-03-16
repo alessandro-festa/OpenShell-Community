@@ -22,9 +22,10 @@ RUN apt-get update && \
 
 # Bake the NeMoClaw default policy into the same location used by the
 # OpenClaw base image so direct image launches and create-time --policy
-# launches start from the same policy.
-RUN mkdir -p /etc/navigator
-COPY policy.yaml /etc/navigator/policy.yaml
+# launches start from the same policy. (Start script and policy-proxy
+# read from /etc/openshell/policy.yaml.)
+RUN mkdir -p /etc/openshell
+COPY policy.yaml /etc/openshell/policy.yaml
 
 # Override the startup script with our version (adds runtime API key injection)
 COPY openclaw-nvidia-start.sh /usr/local/bin/openclaw-nvidia-start
@@ -44,8 +45,7 @@ RUN npm install -g @hono/node-server@1.19.11
 
 # Allow the sandbox user to read the default policy (the startup script
 # copies it to a writable location; this chown covers non-Landlock envs).
-# Some base image variants do not pre-create /etc/navigator.
-RUN mkdir -p /etc/navigator && chown -R sandbox:sandbox /etc/navigator
+RUN mkdir -p /etc/openshell && chown -R sandbox:sandbox /etc/openshell
 # Stage the NeMoClaw DevX extension source
 COPY nemoclaw-ui-extension/extension/ /opt/nemoclaw-devx/
 
