@@ -63,6 +63,10 @@ const INFERENCE_BUNDLE_SETTLE_MS = parseInt(
   process.env.INFERENCE_BUNDLE_SETTLE_MS || "6000",
   10
 );
+const DEFAULT_INFERENCE_PROVIDER =
+  process.env.DEFAULT_INFERENCE_PROVIDER || "nvidia-endpoints";
+const DEFAULT_INFERENCE_MODEL =
+  process.env.DEFAULT_INFERENCE_MODEL || "nvidia/nemotron-3-super-120b-a12b";
 
 const ANSI_RE = /\x1b\[[0-9;]*[a-zA-Z]/g;
 
@@ -1022,12 +1026,85 @@ function hashKey(key) {
   return crypto.createHash("sha256").update(key).digest("hex");
 }
 
+async function upsertProvider(update, startTime) {
+  const updateArgs = [
+    ...cliArgs("provider", "update", update.name),
+    "--credential", update.credential,
+    "--config", update.config,
+  ];
+  log("inject-key", `step 2/5: running ${CLI_BIN} provider update ${update.name} ...`);
+  let result = await execCmd(updateArgs, 120000);
+  let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log("inject-key", `         provider=${update.name} update exited ${result.code} in ${elapsed}s`);
+  if (result.stdout.trim()) log("inject-key", `         stdout: ${result.stdout.trim()}`);
+  if (result.stderr.trim()) log("inject-key", `         stderr: ${result.stderr.trim()}`);
+
+  if (result.code === 0) {
+    cacheProviderConfig(update.name, update.cache);
+    return update.name;
+  }
+
+  const createArgs = [
+    ...cliArgs("provider", "create", "--name", update.name),
+    "--type", update.type,
+    "--credential", update.credential,
+    "--config", update.config,
+  ];
+  log("inject-key", `step 2/5: update failed; creating provider ${update.name} instead ...`);
+  result = await execCmd(createArgs, 120000);
+  elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  log("inject-key", `         provider=${update.name} create exited ${result.code} in ${elapsed}s`);
+  if (result.stdout.trim()) log("inject-key", `         stdout: ${result.stdout.trim()}`);
+  if (result.stderr.trim()) log("inject-key", `         stderr: ${result.stderr.trim()}`);
+
+  if (result.code !== 0) {
+    const updateErr = (result.stderr || result.stdout || "unknown error").trim();
+    throw new Error(`${update.name}: ${updateErr}`);
+  }
+
+  cacheProviderConfig(update.name, update.cache);
+  return update.name;
+}
+
+async function setDefaultInferenceRoute() {
+  const result = await execFirstSuccess(
+    [
+      cliArgs(
+        "inference",
+        "set",
+        "--provider",
+        DEFAULT_INFERENCE_PROVIDER,
+        "--model",
+        DEFAULT_INFERENCE_MODEL
+      ),
+      cliArgs(
+        "cluster",
+        "inference",
+        "set",
+        "--provider",
+        DEFAULT_INFERENCE_PROVIDER,
+        "--model",
+        DEFAULT_INFERENCE_MODEL
+      ),
+    ],
+    30000
+  );
+
+  if (result.code !== 0) {
+    const err = (result.stderr || result.stdout || "set failed").trim();
+    throw new Error(`default inference route: ${err}`);
+  }
+
+  return result.args.slice(1).join(" ");
+}
+
 function runInjectKey(key, keyHash) {
-  log("inject-key", `step 1/4: received key (hash=${keyHash.slice(0, 12)}…)`);
+  log("inject-key", `step 1/5: received key (hash=${keyHash.slice(0, 12)}…)`);
 
   const providerUpdates = [
     {
       name: "nvidia-endpoints",
+      type: "nvidia",
       credential: `NVIDIA_API_KEY=${key}`,
       config: "NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1",
       cache: { NVIDIA_BASE_URL: "https://integrate.api.nvidia.com/v1" },
@@ -1035,45 +1112,29 @@ function runInjectKey(key, keyHash) {
   ];
 
   const t0 = Date.now();
-  Promise.all(
-    providerUpdates.map(async (update) => {
-      const args = [
-        ...cliArgs("provider", "update", update.name),
-        "--credential", update.credential,
-        "--config", update.config,
-      ];
-      log("inject-key", `step 2/4: running ${CLI_BIN} provider update ${update.name} …`);
-      const result = await execCmd(args, 120000);
-      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-      log("inject-key", `         provider=${update.name} CLI exited ${result.code} in ${elapsed}s`);
-      if (result.stdout.trim()) log("inject-key", `         stdout: ${result.stdout.trim()}`);
-      if (result.stderr.trim()) log("inject-key", `         stderr: ${result.stderr.trim()}`);
-
-      if (result.code !== 0) {
-        const err = (result.stderr || result.stdout || "unknown error").trim();
-        throw new Error(`${update.name}: ${err}`);
-      }
-
-      cacheProviderConfig(update.name, update.cache);
-      return update.name;
-    })
-  )
+  Promise.all(providerUpdates.map((update) => upsertProvider(update, t0)))
     .then(async (updatedProviders) => {
-      log("inject-key", `step 3/4: SUCCESS — providers updated: ${updatedProviders.join(", ")}`);
+      log("inject-key", `step 3/5: SUCCESS - providers updated: ${updatedProviders.join(", ")}`);
+      log(
+        "inject-key",
+        `step 4/5: setting default inference route to ${DEFAULT_INFERENCE_PROVIDER}/${DEFAULT_INFERENCE_MODEL}`
+      );
+      const configuredWith = await setDefaultInferenceRoute();
+      log("inject-key", `         configured via ${CLI_BIN} ${configuredWith}`);
       if (sandboxState.status === "creating" || sandboxState.status === "running") {
         log(
           "inject-key",
-          `step 4/4: waiting ${Math.ceil(INFERENCE_BUNDLE_SETTLE_MS / 1000)}s for sandbox inference bundle refresh`
+          `step 5/5: waiting ${Math.ceil(INFERENCE_BUNDLE_SETTLE_MS / 1000)}s for sandbox inference bundle refresh`
         );
         await sleep(INFERENCE_BUNDLE_SETTLE_MS);
       }
       injectKeyState.status = "done";
       injectKeyState.error = null;
       injectKeyState.keyHash = keyHash;
-      log("inject-key", "step 4/4: inference providers ready");
+      log("inject-key", "step 5/5: inference providers ready");
     })
     .catch((e) => {
-      log("inject-key", `step 3/4: FAILED — ${e}`);
+      log("inject-key", `step 3/5: FAILED - ${e}`);
       injectKeyState.status = "error";
       injectKeyState.error = String(e);
     });

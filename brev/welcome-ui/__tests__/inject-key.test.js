@@ -167,6 +167,15 @@ describe("inject-key background process", () => {
     expect(endpointsArgs).toContain("nvidia-endpoints");
     expect(endpointsArgs.some((a) => a.startsWith("NVIDIA_API_KEY="))).toBe(true);
     expect(endpointsArgs.some((a) => a.includes("integrate.api.nvidia.com"))).toBe(true);
+
+    const inferenceCalls = execFile.mock.calls.filter(
+      (c) => c[0] === "nemoclaw" && c[1]?.includes("inference") && c[1]?.includes("set")
+    );
+    expect(inferenceCalls.length).toBeGreaterThanOrEqual(1);
+    expect(inferenceCalls[0][1]).toContain("--provider");
+    expect(inferenceCalls[0][1]).toContain("nvidia-endpoints");
+    expect(inferenceCalls[0][1]).toContain("--model");
+    expect(inferenceCalls[0][1]).toContain("nvidia/nemotron-3-super-120b-a12b");
   });
 
   it("TC-K11: on CLI success, state becomes done", async () => {
@@ -186,7 +195,7 @@ describe("inject-key background process", () => {
   it("TC-K12: on CLI failure, state becomes error", async () => {
     execFile.mockImplementation((cmd, args, opts, cb) => {
       if (typeof opts === "function") { cb = opts; opts = {}; }
-      if (args?.includes("update")) {
+      if (args?.[0] === "provider" && (args?.[1] === "update" || args?.[1] === "create")) {
         const err = new Error("fail");
         err.code = 1;
         return cb(err, "", "provider not found");
@@ -220,6 +229,39 @@ describe("inject-key background process", () => {
     // The error is caught by the .catch() handler in runInjectKey
     expect(["error", "injecting"]).toContain(injectKeyState.status);
   });
+
+  it("TC-K14: creates the provider when update fails before setting inference", async () => {
+    execFile.mockImplementation((cmd, args, opts, cb) => {
+      if (typeof opts === "function") { cb = opts; opts = {}; }
+      if (args?.[0] === "provider" && args?.[1] === "update") {
+        const err = new Error("missing provider");
+        err.code = 1;
+        return cb(err, "", "provider not found");
+      }
+      cb(null, "", "");
+    });
+
+    await request(server)
+      .post("/api/inject-key")
+      .send({ key: FIXTURES.sampleApiKey });
+
+    await new Promise((r) => setTimeout(r, 200));
+
+    const createCall = execFile.mock.calls.find(
+      (c) => c[0] === "nemoclaw" && c[1]?.[0] === "provider" && c[1]?.[1] === "create"
+    );
+    expect(createCall).toBeDefined();
+    expect(createCall[1]).toContain("--name");
+    expect(createCall[1]).toContain("nvidia-endpoints");
+    expect(createCall[1]).toContain("--type");
+    expect(createCall[1]).toContain("nvidia");
+
+    const inferenceCall = execFile.mock.calls.find(
+      (c) => c[0] === "nemoclaw" && c[1]?.[0] === "inference" && c[1]?.[1] === "set"
+    );
+    expect(inferenceCall).toBeDefined();
+    expect(injectKeyState.status).toBe("done");
+  });
 });
 
 describe("key hashing", () => {
@@ -229,17 +271,17 @@ describe("key hashing", () => {
     execFile.mockClear();
   });
 
-  it("TC-K14: key hash is SHA-256 hex digest", () => {
+  it("TC-K15: key hash is SHA-256 hex digest", () => {
     const key = "test-key-123";
     const expected = crypto.createHash("sha256").update(key).digest("hex");
     expect(hashKey(key)).toBe(expected);
   });
 
-  it("TC-K15: identical keys produce same hash", () => {
+  it("TC-K16: identical keys produce same hash", () => {
     expect(hashKey("abc")).toBe(hashKey("abc"));
   });
 
-  it("TC-K16: provider updates cover nvidia-endpoints", async () => {
+  it("TC-K17: provider updates cover nvidia-endpoints", async () => {
     execFile.mockImplementation((cmd, args, opts, cb) => {
       if (typeof opts === "function") { cb = opts; opts = {}; }
       cb(null, "", "");
