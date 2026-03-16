@@ -213,6 +213,30 @@ wait_for_tcp_port() {
   done
 }
 
+derive_chat_ui_url() {
+  if [[ -n "${CHAT_UI_URL:-}" ]]; then
+    printf '%s\n' "$CHAT_UI_URL"
+    return
+  fi
+
+  if [[ -n "${BREV_ENV_ID:-}" ]]; then
+    printf 'https://openclaw-%s.brevlab.com\n' "$BREV_ENV_ID"
+    return
+  fi
+
+  printf 'http://127.0.0.1:18789\n'
+}
+
+json_escape() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//$'\n'/\\n}"
+  value="${value//$'\r'/\\r}"
+  value="${value//$'\t'/\\t}"
+  printf '%s' "$value"
+}
+
 ensure_base_packages() {
   local packages=()
   for pkg in ca-certificates curl git gpg iproute2 sudo tar; do
@@ -428,6 +452,7 @@ install_code_server() {
 configure_code_server() {
   local config_dir settings_dir settings_user_dir workspaces_dir workspace_path home_workspace_path
   local terminals_target
+  local chat_ui_url install_cmd
 
   config_dir="$TARGET_HOME/.config/code-server"
   settings_dir="$TARGET_HOME/.local/share/code-server"
@@ -436,6 +461,8 @@ configure_code_server() {
   workspace_path="$workspaces_dir/nemoclaw-plugin.code-workspace"
   home_workspace_path="$TARGET_HOME/nemoclaw-plugin.code-workspace"
   terminals_target="$TARGET_HOME/.vscode/terminals.json"
+  chat_ui_url="$(derive_chat_ui_url)"
+  install_cmd="cd ${PLUGIN_DIR} && export CHAT_UI_URL=\"${chat_ui_url}\" && bash ./install.sh"
 
   sudo -u "$TARGET_USER" mkdir -p "$config_dir" "$settings_user_dir" "$workspaces_dir" "$TARGET_HOME/.vscode"
 
@@ -443,10 +470,7 @@ configure_code_server() {
   sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/settings.json" "$settings_user_dir/settings.json"
   sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/README.md" "$TARGET_HOME/README.md"
 
-  if [[ -f "$ASSET_DIR/terminals.json" ]]; then
-    sudo -u "$TARGET_USER" install -m 644 "$ASSET_DIR/terminals.json" "$terminals_target"
-  else
-    sudo -u "$TARGET_USER" tee "$terminals_target" >/dev/null <<'EOF'
+  sudo -u "$TARGET_USER" tee "$terminals_target" >/dev/null <<EOF
 {
   "autorun": true,
   "terminals": [
@@ -456,13 +480,12 @@ configure_code_server() {
       "open": true,
       "focus": true,
       "commands": [
-        "cd /home/ubuntu/openshell-openclaw-plugin && bash ./install.sh"
+        "$(json_escape "$install_cmd")"
       ]
     }
   ]
 }
 EOF
-  fi
 
   sudo -u "$TARGET_USER" tee "$config_dir/config.yaml" >/dev/null <<EOF
 bind-addr: 0.0.0.0:${CODE_SERVER_PORT}
@@ -518,6 +541,7 @@ enable_code_server_service() {
 print_next_steps() {
   log "Launch log: $LAUNCH_LOG"
   log "Plugin repo: $PLUGIN_DIR"
+  log "OpenClaw UI origin: $(derive_chat_ui_url)"
   log "code-server URL: http://$(hostname -f 2>/dev/null || hostname):${CODE_SERVER_PORT}"
   log "code-server service: journalctl -u code-server@${TARGET_USER} -f"
   log "Next step: open code-server and complete the interactive install in the auto-opened terminal"
