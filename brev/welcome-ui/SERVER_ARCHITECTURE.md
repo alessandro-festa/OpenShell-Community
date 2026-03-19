@@ -501,7 +501,7 @@ Step 6: Cleanup tempfile (always, even on failure — in finally block)
     "gatewayUrl": "https://8080-xxx.brevlab.com",
     "gatewayPort": 8080,
     "instructions": {
-        "install": "curl -fsSL https://github.com/NVIDIA/OpenShell/releases/download/devel/install.sh | sh",
+        "install": "curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | OPENSHELL_VERSION=dev sh",
         "connect": "openshell gateway add https://8080-xxx.brevlab.com",
         "createSandbox": "openshell sandbox create -- claude",
         "tui": "openshell term"

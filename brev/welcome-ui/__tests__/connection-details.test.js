@@ -99,7 +99,7 @@ describe("GET /api/connection-details", () => {
   it("TC-CD06: instructions contain exact CLI strings", async () => {
     const res = await request(server).get("/api/connection-details");
     expect(res.body.instructions.install).toBe(
-      "curl -fsSL https://github.com/NVIDIA/OpenShell/releases/download/devel/install.sh | sh"
+      "curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | OPENSHELL_VERSION=dev sh"
     );
     expect(res.body.instructions.createSandbox).toBe(
       "openshell sandbox create -- claude"

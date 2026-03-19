@@ -10,7 +10,7 @@ When this Brev Launchable completes host setup, it opens `code-server` and
 starts an interactive terminal that runs:
 
 ```bash
-cd ${HOME}/NemoClaw
+    cd ${HOME}/NemoClaw
 bash ./install.sh
 ```
 

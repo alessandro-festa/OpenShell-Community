@@ -1819,7 +1819,7 @@ async function handleConnectionDetails(req, res) {
     gatewayPort: 8080,
     instructions: {
       install:
-        "curl -fsSL https://github.com/NVIDIA/OpenShell/releases/download/devel/install.sh | sh",
+        "curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | OPENSHELL_VERSION=dev sh",
       connect: `openshell gateway add ${gatewayUrl}`,
       createSandbox: "openshell sandbox create -- claude",
       tui: "openshell term",
