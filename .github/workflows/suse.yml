@@ -1,19 +1,19 @@
-name: Build base-suse image
+name: Build suse image
 
 on:
   push:
     branches: [main]
     paths:
-      - "sandboxes/base-suse/**"
+      - "sandboxes/suse/**"
     tags:
-      - "base-suse/v*.*.*"
+      - "suse/v*.*.*"
   pull_request:
     branches: [main]
     paths:
-      - "sandboxes/base-suse/**"
+      - "sandboxes/suse/**"
 
 env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/openshell-community/sandboxes/base-suse
+  IMAGE: ghcr.io/${{ github.repository_owner }}/openshell-community/sandboxes/suse
 
 permissions:
   contents: read
@@ -37,7 +37,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v6
         with:
-          context: sandboxes/base-suse/
+          context: sandboxes/suse/
           push: false
           load: true
           tags: ${{ env.IMAGE }}:scan
@@ -64,7 +64,7 @@ jobs:
   publish:
     name: Publish
     needs: build-and-scan
-    if: startsWith(github.ref, 'refs/tags/base-suse/v')
+    if: startsWith(github.ref, 'refs/tags/suse/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -85,13 +85,13 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           tags: |
-            type=match,pattern=base-suse/(v\d+\.\d+\.\d+),group=1
+            type=match,pattern=suse/(v\d+\.\d+\.\d+),group=1
             type=sha,prefix=
 
       - name: Build and push with attestations
         uses: docker/build-push-action@v6
         with:
-          context: sandboxes/base-suse/
+          context: sandboxes/suse/
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -3,17 +3,17 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 SUSE LLC. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# OpenShell Community base sandbox image — SUSE BCI variant
+# OpenShell Community SUSE sandbox image
 #
 # Provides the same foundational system tools, users, and developer environment
-# as sandboxes/base/ but built on SUSE Linux Enterprise BCI (bci-base:15.6).
+# as sandboxes/base/ but built on SUSE Linux Enterprise BCI 16 (bci-base:16.0).
 #
-# Build:  docker build -t openshell-base-suse .
+# Build:  docker build -t openshell-suse .
 
 # System base
-FROM registry.suse.com/bci/bci-base:15.6 AS system
+FROM registry.suse.com/bci/bci-base:16.0 AS system
 
-LABEL org.opencontainers.image.base.name="registry.suse.com/bci/bci-base:15.6"
+LABEL org.opencontainers.image.base.name="registry.suse.com/bci/bci-base:16.0"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1

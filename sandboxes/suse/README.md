@@ -1,21 +1,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 SUSE LLC. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Base Sandbox — SUSE BCI Variant
+# SUSE Sandbox
 
 A SUSE Linux Enterprise BCI variant of the OpenShell Community base sandbox image.
 This image provides the same foundational system tools, users, and developer environment
-as [`sandboxes/base/`](../base/) but is built on `registry.suse.com/bci/bci-base:15.6`
+as [`sandboxes/base/`](../base/) but is built on `registry.suse.com/bci/bci-base:16.0`
 and managed with `zypper` instead of `apt-get`.
 
-The `bci-base:15.6` image is freely available — no SUSE subscription or registry
+The `bci-base:16.0` image is freely available — no SUSE subscription or registry
 credentials are required to pull it.
 
 ## Differences from the Ubuntu Base
 
 | Aspect | Ubuntu base (`sandboxes/base/`) | This image (`sandboxes/base-suse/`) |
 |--------|--------------------------------|--------------------------------------|
-| Base image | `nvcr.io/nvidia/base/ubuntu:noble-20251013` | `registry.suse.com/bci/bci-base:15.6` |
+| Base image | `nvcr.io/nvidia/base/ubuntu:noble-20251013` | `registry.suse.com/bci/bci-base:16.0` |
 | Package manager | `apt-get` | `zypper` |
 | DNS tools package | `dnsutils` | `bind-utils` |
 | SSH / SFTP package | `openssh-sftp-server` | `openssh` (includes sftp-server) |
@@ -29,7 +29,7 @@ Claude CLI, directory layout, and sandbox policy — are identical to the Ubuntu
 
 | Category | Tools |
 |----------|-------|
-| OS | SUSE Linux Enterprise BCI 15.6 |
+| OS | SUSE Linux Enterprise BCI 16.0 |
 | Languages | `python3` (3.13), `node` (22.x) |
 | Package managers | `npm` (11.11.0), `uv` (0.10.8), `pip` |
 | Coding agents | `claude`, `opencode`, `codex`, `copilot` |
