@@ -59,15 +59,19 @@ FROM system AS devtools
 # npm 11 ships tar@^7.5.9, fixing tar@6.2.1 vulns bundled in npm 10
 # (GHSA-r6q2-hw4h-h46w, GHSA-8qq5-rm4j-mr97, GHSA-83g3-92jg-28cx,
 # GHSA-34x7-hfp2-rc4v, GHSA-qffp-2rhf-9h96).
-RUN curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - && \
-    zypper --non-interactive install --no-recommends \
+# Install Node.js 22 + npm directly from the SLE_BCI repository.
+# Earlier versions of this Dockerfile invoked the rpm.nodesource.com setup
+# script, but that's a RHEL/Fedora-targeted bash installer that doesn't
+# recognise SUSE BCI — zypper would then fail to resolve `nodejs22`.
+# BCI 16 ships nodejs22 + npm22 natively, so no third-party repo is needed.
+RUN zypper --non-interactive install --no-recommends \
         gcc \
         gcc-c++ \
         make \
         git \
         nodejs22 \
+        npm22 \
         vim \
-        nano \
     && zypper clean --all \
     && npm install -g npm@11.11.0
 
@@ -84,12 +88,14 @@ RUN npm install -g \
         @openai/codex@0.117.0 \
         @github/copilot@1.0.16
 
-# GitHub CLI
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+# GitHub CLI. mkdir /usr/share/keyrings because BCI 16 doesn't ship it
+# by default — the directory is a Debian-ism that this script inherited.
+RUN mkdir -p /usr/share/keyrings && \
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
         -o /usr/share/keyrings/githubcli-archive-keyring.gpg && \
     zypper --non-interactive addrepo \
         https://cli.github.com/packages/rpm/gh-cli.repo && \
-    zypper --non-interactive refresh && \
+    zypper --non-interactive --gpg-auto-import-keys refresh && \
     zypper --non-interactive install --no-recommends gh && \
     zypper clean --all
 

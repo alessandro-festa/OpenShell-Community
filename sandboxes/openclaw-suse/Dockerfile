@@ -40,4 +40,16 @@ RUN mkdir -p /sandbox/.openclaw && \
 
 USER sandbox
 
-ENTRYPOINT ["/bin/bash"]
+# Default entrypoint keeps the container alive when the image is deployed
+# directly as a Kubernetes Pod (e.g. by aif-nc's PreDeployInCluster mode),
+# which `/bin/bash` would not — bash exits immediately without a TTY.
+#
+# The local `openshell sandbox create --from openclaw-suse -- openclaw-start`
+# flow is unaffected: openshell overrides the entrypoint with its own
+# command (typically `openclaw-start`) when materialising the sandbox.
+#
+# TODO: replace with a proper long-lived daemon (sshd configured with the
+# openshell handshake secret + openclaw running on incoming connections)
+# so the in-cluster gateway can actually exchange traffic with this Pod.
+# Tracked as the future upstream PR scope.
+ENTRYPOINT ["sleep", "infinity"]
