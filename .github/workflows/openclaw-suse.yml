@@ -92,6 +92,7 @@ jobs:
           tags: |
             type=match,pattern=openclaw-suse/(v\d+\.\d+\.\d+),group=1
             type=sha,prefix=
+            type=raw,value=latest
 
       - name: Build and push with attestations
         uses: docker/build-push-action@v6
