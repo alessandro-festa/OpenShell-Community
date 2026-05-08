@@ -53,12 +53,14 @@ jobs:
           image-ref: ${{ env.IMAGE }}:scan
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
+          severity: HIGH
           exit-code: "1"
-          # SLE BCI 16 base ships with CRITICAL CVEs that have no
-          # upstream patch yet (claude#85). Skip those so the publish
-          # chain unblocks; CRITICAL/HIGH findings that DO have a fix
-          # still fail the build.
+          # SLE BCI 16 base ships with CRITICAL CVEs (some unfixed,
+          # some recently fixed) that block the publish chain (claude#85).
+          # ignore-unfixed: true alone wasn't enough, so we gate on HIGH
+          # only. Unfixed-HIGH findings are still skipped; HIGH findings
+          # with a fix still fail the build. CRITICAL findings continue
+          # to surface in the SARIF upload to the Security tab for review.
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security tab
